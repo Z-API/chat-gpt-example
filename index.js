@@ -23,8 +23,8 @@ const replyMessage = async (phone, message) => {
 };
 
 const appendChat = (phone, message) => {
-  chats[phone].messages.push(message);
-  if (chats[phone].messages.length > 6) {
+  chats[phone].messages.push(message.replace(/(\r\n|\n|\r)/gm, ""));
+  if (chats[phone].messages.length > 7) {
     chats[phone].messages.shift();
   }
 };
@@ -34,12 +34,13 @@ const onNewMessage = async (message) => {
     return await replyMessage(message.phone, "Um momento por favor");
   }
   chats[message.phone].blocked = true;
-  const text = `${message.phone}: ${message.text.message}\nOPENAI:`;
+  const text = ` ${message.phone}: ${message.text.message}`;
 
   await appendChat(message.phone, text);
+  await appendChat(message.phone, ` OPENAI:`);
 
   try {
-    const prompt = chats[message.phone].messages.join("");
+    const prompt = chats[message.phone].messages.join("\n");
     const response = await axios.post(
       `https://api.openai.com/v1/completions`,
       {
@@ -59,7 +60,7 @@ const onNewMessage = async (message) => {
       }
     );
     if (response.data.choices.length > 0) {
-      await appendChat(message.phone, `${response.data.choices[0].text}\n`);
+      await appendChat(message.phone, `${response.data.choices[0].text}`);
       await replyMessage(message.phone, response.data.choices[0].text.trim());
     } else {
       throw "NOT_FOUND";
@@ -90,7 +91,7 @@ app.post("/on-new-message", async (req, res) => {
       messages: [],
     };
     await replyMessage(req.body.phone, initialMessage);
-    await appendChat(req.body.phone, `OPENAI: ${initialMessage}\n`);
+    await appendChat(req.body.phone, ` OPENAI: ${initialMessage}`);
   }
   res.status(200).send({
     message: "success",
