@@ -84,7 +84,7 @@ app.post("/on-new-message", async (req, res) => {
   ) {
     await onNewMessage(req.body);
   }
-  if (req.body.text && req.body.text.message === "!gpt") {
+  if (!req.body.fromMe && req.body.text && req.body.text.message === "!gpt") {
     chats[req.body.phone] = {
       blocked: false,
       messages: [],
